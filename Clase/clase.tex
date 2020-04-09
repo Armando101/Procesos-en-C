@@ -1,0 +1,149 @@
+\documentclass{article}
+\usepackage[spanish]{babel}
+\usepackage[utf8]{inputenc}
+\author{Armando Rivera}
+\date{\today}
+\title{Procesos y señales en C-Linux}
+\begin{document}
+	\maketitle
+	\section{Depurador gdb}
+	Para trabajar con este depurador se tiene que compilar el programa a depurar con la bandera -g\\
+	\fbox{\$ gcc -g -o test test.c}
+	\\Para usar este depurador ejecutamos el comando gdb seguido del nombre de nuestro programa: $gdb\ test$. Comandos:\\
+	\begin{itemize}
+		\item \textbf{l} \textit{(list)}: Este comando muestra	el código fuente del programa que estoy depurando.
+		\item \textbf{r} \textit{(run)}: Corre el programa
+		\item \textbf{b n} \textit{(break)}: Pone un breakpoint donde n es la linea donde queremos dicho breakpoint
+		\item \textbf{c}\textit{(continue)}: Continua con el programa despues de un breakpoint.
+		\item \textbf{p var} \textit{(print variable)}: Imprime el valor de una variable.
+		\item \textbf{delate n}: Elimina el break point que se encuentra en la linea n.
+		\item \textbf{n} \textit{(next)}: Continúa con la siguiente linea y avanza con el código linea por línea.
+	\end{itemize}
+	\section{Comando top}
+	Este comando nos proporciona información de los procesos que están corriendo en tiempo real.
+	\begin{enumerate}
+		\item \texttt{Primera línea}: muestra una serie de datos referidos al sistema.
+		\begin{itemize}
+			\item \textbf{Hora actual}
+			\item \textbf{Tiempo que el sistema ha estado corriendo}
+			\item \textbf{Cantidad de usuarios conectados}
+			\item \textbf{load average}: los números indican el estado de us del CPU. Si los números son menores a 1 esto quiere decir que el CPU no tiene que esperar para poder ejecutar una instrucción
+		\end{itemize}
+	\item \texttt{Segunda línea}: Muestra el total de procesos que están corriendo y los divide por estados, Running, slepping, Stopped, Zombie.
+	\item \texttt{Tercera línea}: Muestra el uso del CPU.
+	\begin{itemize}
+		\item \%us: muestra el uso de CPU del usuario.
+		\item \%sy: Uso del CPU del sistema
+		\item \%id: Muestra el uso del CPU disponoble para utilizar.
+		\item \%wa: Muestra en porcentaje el tiempo en espera del CPU. 
+	\end{itemize}
+	\item \texttt{Cuarta línea}: Muestra los valores referentes a la memoria fisica del equipo.
+	\begin{itemize}
+		\item \textbf{Total}: Valor total de la memoria fisica.
+		\item \textbf{used}: memoria utilizada.
+		\item \textbf{Free}: Memoria libre.
+		\item \textbf{Buffered}: Memoria que está en el buffer
+	\end{itemize}
+	\item \texttt{Quinta línea}
+	Muestra valores referentes al uso de memoria swap.
+	\item \textbf{PID}: Process ID del proceso
+	\item \textbf{USER}: Usuario que esta corriendo dicha aplicación.
+	\item \textbf{PR}: Prioridad del proceso.
+	\item \textbf{NI}: valor por el cual se establece una prioridad para el proceso.
+	\item \textbf{VIRT}: Total de la memoria virtual utilizada.
+	\item \textbf{RES}: Resident task size.
+	\item \textbf{SHR}: Estado del proceso
+	\item \textbf{\%CPU \%MEM}: Porcentajes de memoria y cpu utilizadas.
+	\item \textbf{Time}: Tiempo de uso del procesador para ese proceso.
+	\item \textbf{Comand}: Comando que esta siendo ejecutado por el Deamon
+	\end{enumerate}
+	\section{Procesos}
+	\subsection{Definición de procesos}
+	Un programa es una colección de instrucciones y de datos que se encuentran almacenados en un fichero ordinario.\\Un programa generalmente consta de las siguientes partes:
+	\begin{itemize}
+		\item Un conjunto de cabeceras que describen atributos del fichero
+		\item Un bloque donde se encuentran las instrucciones en lenguaje máquina del programa
+	\end{itemize}
+	
+	Cuando un programa es leído del disco por el núcleo y es cargado en memoria para ejecutarse, se convierte en un proceso. A cada proceso se le asigna un un número que lo identifica, este numero es llamado \textit{PID}. Un proceso se compone de tres bloques fundamentales conocidos como segmentos:\\
+	\begin{itemize}
+		\item  \textit{Segmento de texto}: Contiene las instrucciones que entiende la CPU de nuestra máquina.
+		\item \textit{Segmento de datos}: Contiene los datos que deben ser inicializados al arrancar el proceso.
+		\item \textit{Segmento de pila}: Se crea al arrancar el proceso y su tamaño es gestionado dinámicamente.
+ 	\end{itemize}
+	
+	\subsection{Estados de un proceso}
+	El tiempo de vida de un proceso se puede dividir en un conjunto de estados, cada uno con unas características determinadas.
+	Los estados de un proceso son: 
+	\begin{itemize}
+		\item  \textit{new (Nuevo)}: Cuando el proceso es creado
+		\item \textit{Ejecutando (running)}: El proceso tiene asignado un procesador y está ejecutando sus instrucciones
+		\item  \textit{Bloqueo (waiting)}: El proceso está esperando por un evento.
+		\item \textit{Listo (ready)}: El proceso está listo para ejecutar.
+		\item \textit{Finalizado}: El proceso finalizó su ejecución
+	\end{itemize}
+	Al crearse un proceso inmediatamente pasa al estado listo.\\Ante una interrupción que se genere, el proceso puede perder el recurso del procesador y pasar al estado de listo En el estado listo, El planificador será el encargado de seleccionar el próximo proceso a ejecutar.\\De ejecutando a bloqueado: A medida que el proceso ejecuta instrucciones realiza pedidos en distintos componentes. Teniendo en cuenta que el pedido puede demorar y, además, si está en un sistema multiprogramado, el proceso es puesto en una cola de espera hasta qe se complete su pedido. De esta forma se logra utilizar en forma mas eficiente el procesador. \\De bloqueado a listo: Una vez que ocurre el evento que el proceso estaba esperando, es puesto nuevamente en la cola de procesos listos.
+	\subsection{Proceso Zombie}
+	Cuando un proceso finaliza en sistemas Unix, toda su memoria y recursos asociados a él se desreferencian (típico exit)
+	para que puedan ser usados por otros procesos. En ese espacio de tiempo, la entrada del proceso hijo en la tabla de 
+	procesos permanece un mínimo tiempo, hasta que el padre conoce que el estado de su proceso hijo es finalizado y entonces 
+	lo saca de la tabla de procesos.
+	
+	Para que el proceso padre sepa el estado de su hijo, se le envía una señal SIGCHLD indicando que el proceso hijo ha
+	finalizado. Esa señal es generada gracias a llamadas al sistema como wait() / waitpid() / waitid().
+	
+	¿Qué pasa cuando no se usa esos manejadores para conocer el estado de los hijos (función wait() / waitpid() / waitid())? 
+	Pues que el padre no sabe que su hijo ha terminado y por lo tanto sigue en la lista de procesos.
+	Los procesos zombie se generan por tanto, cuando el padre no recibe esa señal o bien la ignora, generalmente por bugs
+	o aplicaciones mal programadas
+	
+	Es posible, aunque algo poco común, que el padre esté muy ocupado y no pueda en ese momento matar al proceso.
+	También podría ser que el padre decida tener un proceso zombie en la tabla para reservar ese PID, o que el padre esté
+	interesado en eliminar los procesos hijos en un determinado orden,…
+	
+	El tener procesos zombies en la tabla no suele ser un problema, al no ser que su número crezca exponencialmente y 
+	se ocupen todos los identificadores de procesos que el sistema operativo puede utilizar o bien se necesite el PID 
+	que el proceso fantasma ocupa. 
+	
+	\section{Señales}
+		\subsection{Definición}
+	Las señales son interrupciones que pueden ser enviadas a un proceso para informarle de algún evento asíncrono o situación especial. Cuando un proceso recibe una señal puede reaccionar de de tres formas distintas:
+	\begin{itemize}
+		\item  Ignora la señal con lo cual inmune la misma
+		\item Invocar a la rutina de tratamiento por defecto: Esta rutina no la aporta el programador sino que es proporcionada por el núcleo
+		\item Invocar a una rutina propia que se encarga de tratar la señal
+	\end{itemize}
+	
+	\subsection{Tipos de señales en Linux}
+	Cada señal tiene un número asociado, por lo tanto al enviar una señal, en realidad se está enviando un número. Los tipos de señales más conocidos son:
+	\begin{itemize}
+		\item Señales relacionadas con la terminación de procesos.
+		\item Señales relacionadas con las excepciones inducidas por los procesos. Por ejemplo: al intentar acceder a una dirección de memoria no permitida
+		\item Señales originadas desde un proceso en ejecución. Un proceso envía una señal a otro via \textit{kill}
+		\item Señales relacionadas con la interacción de la terminal.
+		\item Señales para ejecutar un proceso paso a paso 	
+	\end{itemize}
+	
+	A continuación se muestran algunas señales importantes.
+	\begin{itemize}
+		\item \texttt{SIGHUP}: \textit{Desconexión.} La acción por defecto de esta señal es terminar la ejecución del proceso que la recibe.
+		\item  \texttt{SIGINT}: \textit{Interrupción}. Se envía a todo proceso asociado con una terminal de control cuando se pulsan las teclas de interrupción $Ctrl-C$
+		\item \texttt{SIGALARM}: \textit{Despertador.} Es enviada a un proceso cuando alguno de sus temporizadores descendentes llega a cero. Su acción por defecto es terminar el proceso
+		\item \texttt{SIGTERM}: \textit{Finalización controlada}. Es la señal utilizada para indicarle a un proceso que debe terminar su ejecución.
+		La rutina de tratamiento de esta señal se encarga de tomar las acciones necesarias para dejar al proceso	en un estado coherente y a continuación finalizar su ejecución con una llamada a exit
+		\item \texttt{SIGUSR1}: \textit{Señal numero 1 de usuario.} Señal numero 1 de usuario. Esta señal está reservada para uso del programador.
+		\item \texttt{SIGTRAP}: \textit{Trace trap.} Cuando un proceso se está ejecutando \textit{paso a paso}, esta señal es enviada después de ejecutar cada instrucción. Es empleada por los programas de depuradores.
+	\end{itemize}
+	
+	\subsection{Envío de señales}
+	El envio de señales se hace mediante el comando \textit{kill} cuyo prototipo es:
+	\fbox{\parbox{5cm}{\ttfamily \#include $<signal.h>$\\\textit{int}kill ($pid\_t$ pid, $int$ sig) }}
+	 \subsection{Tratamiento de señales}
+	 Para especificar qué tratamiento debe realizar un proceso al recibir una señal, se emplea la llamda \ttfamily signal.\\
+	 \fbox{\parbox{10cm}{\ttfamily \#include $<signal.h>$\\\textit{void}*signal ($int$ sig, $void$ (*action ())) (); }}
+	\subsection{Escucha de señales}
+	En ocasiones puede interesar que un proceso suspenda su ejecución en espera de que ocurra algún evento exterior a él. Por ejemplo al ejecutar una entrada/salida. Para estas situaciones nos valemos de la llamada a \ttfamily pause\\
+	\fbox{\parbox{5cm}{
+		\#include $<unistd.h>$\\\textit{int}pause ($void$);	
+	}}
+\end{document}
